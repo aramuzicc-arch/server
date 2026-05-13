@@ -12,7 +12,13 @@ import uploadRoutes from "./routes/upload.routes.js";
 
 const app = express();
 
-app.use(async (_req, _res, next) => {
+// Only connect for API routes. SPA/static (GET /, /assets/*) must not block on MongoDB — unreachable DB
+// would otherwise hang until the serverless max duration (e.g. 300s on Vercel).
+app.use(async (req, _res, next) => {
+  if (!req.path.startsWith("/api")) {
+    next();
+    return;
+  }
   try {
     await connectDb();
     next();
