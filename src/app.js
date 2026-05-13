@@ -1,3 +1,6 @@
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 import express from "express";
 import cors from "cors";
 import { env } from "./config/env.js";
@@ -56,6 +59,25 @@ app.use("/api/auth", authRoutes);
 app.use("/api", publicRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/upload", uploadRoutes);
+
+// Vercel legacy single-function deploy: static client copied to `server/public` (see vercel.json buildCommand).
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const publicDir = path.join(__dirname, "..", "public");
+const indexHtml = path.join(publicDir, "index.html");
+if (fs.existsSync(indexHtml)) {
+  app.use(express.static(publicDir, { index: false }));
+  app.use((req, res, next) => {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      next();
+      return;
+    }
+    if (req.path.startsWith("/api")) {
+      next();
+      return;
+    }
+    res.sendFile(indexHtml, (err) => (err ? next(err) : undefined));
+  });
+}
 
 app.use((error, _req, res, _next) => {
   console.error(error);

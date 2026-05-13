@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "installCommand": "npm install && cd ../client && npm install",
+  "buildCommand": "cd ../client && npm run build && cd ../server && rm -rf public && cp -R ../client/dist/public public",
   "builds": [
     {
       "src": "index.js",
