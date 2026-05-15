@@ -3,6 +3,7 @@ import { isOriginAllowed } from "./config/cors.js";
 import { applyCors } from "./middleware/cors.js";
 import { normalizeVercelApiPath } from "./middleware/vercelPath.js";
 import { connectDb } from "./config/db.js";
+import { requestTimeout } from "./middleware/timeout.js";
 import authRoutes from "./routes/auth.routes.js";
 import publicRoutes from "./routes/public.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
@@ -10,6 +11,8 @@ import uploadRoutes from "./routes/upload.routes.js";
 
 const app = express();
 
+// Prevent requests from hanging indefinitely in Vercel serverless.
+app.use(requestTimeout);
 app.use(applyCors);
 app.use(normalizeVercelApiPath);
 app.use(express.json());

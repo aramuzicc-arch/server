@@ -7,4 +7,8 @@ import app from "../src/app.js";
 
 export default serverless(app, {
   binary: ["image/*", "video/*", "multipart/form-data", "application/octet-stream"],
+  // Disable keep-alive to prevent connection reuse issues in serverless
+  request: (request) => {
+    request.headers["connection"] = "close";
+  },
 });
