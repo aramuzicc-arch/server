@@ -10,6 +10,14 @@ npm run dev
 
 API: `http://localhost:5050/api` (see `PORT` in `.env`).
 
+Admin sign-in uses **MongoDB** (`AdminUser`), not Kimi OAuth. After configuring `MONGODB_URI`:
+
+```bash
+npm run seed:admin
+```
+
+Then open the client at `/admin/login` (username/password from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env` at seed time).
+
 ## Vercel
 
 1. Create a Vercel project with **Root Directory** = `server` (this folder).
