@@ -39,16 +39,3 @@ export function isOriginAllowed(origin) {
   }
   return false;
 }
-
-export const corsOptions = {
-  credentials: true,
-  methods: corsAllowedMethods,
-  allowedHeaders: corsAllowedHeaders,
-  origin(origin, callback) {
-    if (isOriginAllowed(origin)) {
-      callback(null, true);
-      return;
-    }
-    callback(null, false);
-  },
-};

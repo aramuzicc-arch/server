@@ -1,6 +1,7 @@
 import express from "express";
-import cors from "cors";
-import { corsOptions } from "./config/cors.js";
+import { isOriginAllowed } from "./config/cors.js";
+import { applyCors } from "./middleware/cors.js";
+import { normalizeVercelApiPath } from "./middleware/vercelPath.js";
 import { connectDb } from "./config/db.js";
 import authRoutes from "./routes/auth.routes.js";
 import publicRoutes from "./routes/public.routes.js";
@@ -9,15 +10,8 @@ import uploadRoutes from "./routes/upload.routes.js";
 
 const app = express();
 
-app.use(cors(corsOptions));
-app.use((req, res, next) => {
-  // Never touch MongoDB on CORS preflight (was causing 300s timeouts on Vercel).
-  if (req.method === "OPTIONS") {
-    res.sendStatus(204);
-    return;
-  }
-  next();
-});
+app.use(applyCors);
+app.use(normalizeVercelApiPath);
 app.use(express.json());
 
 app.get("/", (_req, res) => {
@@ -28,7 +22,6 @@ app.get("/", (_req, res) => {
   });
 });
 
-// MongoDB only for mutating/reading API data (not health or preflight).
 app.use(async (req, _res, next) => {
   if (
     req.method === "OPTIONS" ||
@@ -56,16 +49,20 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/upload", uploadRoutes);
 
 app.use((req, res) => {
-  if (req.path.startsWith("/api")) {
-    res.status(404).json({ message: "Not found" });
-    return;
-  }
   res.status(404).json({ message: "Not found" });
 });
 
-app.use((error, _req, res, _next) => {
+app.use((error, req, res, _next) => {
+  const origin = req.headers.origin;
+  if (origin && !res.headersSent && isOriginAllowed(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Vary", "Origin");
+  }
   console.error(error);
-  res.status(500).json({ message: "Internal server error" });
+  if (!res.headersSent) {
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 export default app;

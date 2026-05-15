@@ -16,7 +16,9 @@ npm run seed:admin   # creates AdminUser in MongoDB
 
 Admin login: client app → `/admin/login`.
 
-## Vercel (`vercel.json`)
+## Vercel (`vercel.json` + `api/index.js`)
+
+Uses the modern **`api/`** serverless layout (no legacy `builds` block).
 
 1. **Root Directory** = `server`
 2. Set env vars from `.env.example` (especially `MONGODB_URI`, `JWT_SECRET`, `CLOUDINARY_*`, `JWT_SECRET`)

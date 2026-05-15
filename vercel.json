@@ -1,27 +1,15 @@
 {
-  "version": 2,
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "npm install",
-  "builds": [
-    {
-      "src": "index.js",
-      "use": "@vercel/node"
-    }
+  "rewrites": [
+    { "source": "/api", "destination": "/api" },
+    { "source": "/api/(.*)", "destination": "/api" },
+    { "source": "/(.*)", "destination": "/api" }
   ],
-  "routes": [
-    {
-      "src": "/api",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.js"
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 300,
+      "memory": 1024
     }
-  ],
-  "env": {
-    "NODE_ENV": "production"
   }
 }
