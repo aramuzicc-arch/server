@@ -6,9 +6,6 @@ node_modules/
 .env.*
 !.env.example
 
-# Vercel: copied client build (see vercel.json buildCommand)
-public/
-
 # Logs & runtime
 logs/
 *.log
