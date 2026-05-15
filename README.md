@@ -20,10 +20,10 @@ Admin login: client app → `/admin/login`.
 
 1. **Root Directory** = `server`
 2. Set env vars from `.env.example` (especially `MONGODB_URI`, `JWT_SECRET`, `CLOUDINARY_*`, `JWT_SECRET`)
-3. **`CLIENT_ORIGIN`** must include every frontend origin, e.g.  
-   `http://localhost:3000,https://aramuzicc.vercel.app`
-4. **`vercel.json` CORS headers** use `https://aramuzicc.vercel.app` for edge OPTIONS/responses. If the client URL changes, update those headers and `CLIENT_ORIGIN` together.
-5. Deploy → API base: `https://<server-project>.vercel.app/api`
+3. **`CLIENT_ORIGIN`** — production + local, e.g. `http://localhost:3000,https://aramuzicc.vercel.app`  
+   Vercel **preview** URLs (`https://aramuzicc-git-….vercel.app`) are allowed automatically (see `CLIENT_VERCEL_SLUG` in `.env.example`).
+4. Deploy → API base: `https://<server-project>.vercel.app/api`  
+   CORS is handled in Express (no hardcoded origins in `vercel.json`).
 
 Client project: set `VITE_API_BASE_URL=https://<server-project>.vercel.app/api`
 

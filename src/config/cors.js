@@ -1,6 +1,5 @@
 import { env } from "./env.js";
 
-/** Must match `Access-Control-Allow-Headers` in `vercel.json` and the `cors` package. */
 export const corsAllowedHeaders = [
   "Content-Type",
   "Authorization",
@@ -9,15 +8,27 @@ export const corsAllowedHeaders = [
 
 export const corsAllowedMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
 
-/** Primary production client — keep in sync with `vercel.json` route headers when you change domains. */
-export const primaryClientOrigin =
-  [...env.clientOriginAllowlist].find((o) => o.startsWith("https://")) ||
-  env.clientOrigin;
+/** Vercel production + branch/preview URLs for the client (e.g. aramuzicc-git-main-….vercel.app). */
+const VERCEL_CLIENT_SLUG = (process.env.CLIENT_VERCEL_SLUG || "aramuzicc").toLowerCase();
+
+function isVercelClientPreview(origin) {
+  try {
+    const { protocol, hostname } = new URL(origin);
+    return (
+      protocol === "https:" &&
+      hostname.endsWith(".vercel.app") &&
+      hostname.toLowerCase().includes(VERCEL_CLIENT_SLUG)
+    );
+  } catch {
+    return false;
+  }
+}
 
 export function isOriginAllowed(origin) {
   if (!origin) return true;
   const normalized = origin.replace(/\/$/, "");
   if (env.clientOriginAllowlist.has(normalized)) return true;
+  if (isVercelClientPreview(origin)) return true;
   if (process.env.NODE_ENV !== "production") {
     try {
       const { hostname } = new URL(origin);
