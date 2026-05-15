@@ -6,10 +6,19 @@ export const corsAllowedHeaders = [
   "X-Requested-With",
 ];
 
-export const corsAllowedMethods = ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"];
+export const corsAllowedMethods = [
+  "GET",
+  "POST",
+  "PUT",
+  "DELETE",
+  "PATCH",
+  "OPTIONS",
+];
 
 /** Vercel production + branch/preview URLs for the client (e.g. aramuzicc-git-main-….vercel.app). */
-const VERCEL_CLIENT_SLUG = (process.env.CLIENT_VERCEL_SLUG || "aramuzicc").toLowerCase();
+const VERCEL_CLIENT_SLUG = (
+  process.env.CLIENT_VERCEL_SLUG || "aramuzicc"
+).toLowerCase();
 
 function isVercelClientPreview(origin) {
   try {
@@ -26,15 +35,15 @@ function isVercelClientPreview(origin) {
 
 export function isOriginAllowed(origin) {
   if (!origin) return true;
-  
+
   const normalized = origin.replace(/\/$/, "");
-  
+
   // Check explicit allowlist first
   if (env.clientOriginAllowlist.has(normalized)) return true;
-  
+
   // Check Vercel preview/production URLs
   if (isVercelClientPreview(origin)) return true;
-  
+
   // Allow localhost in development
   if (process.env.NODE_ENV !== "production") {
     try {
@@ -44,6 +53,6 @@ export function isOriginAllowed(origin) {
       return false;
     }
   }
-  
+
   return false;
 }
