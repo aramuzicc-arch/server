@@ -26,9 +26,16 @@ function isVercelClientPreview(origin) {
 
 export function isOriginAllowed(origin) {
   if (!origin) return true;
+  
   const normalized = origin.replace(/\/$/, "");
+  
+  // Check explicit allowlist first
   if (env.clientOriginAllowlist.has(normalized)) return true;
+  
+  // Check Vercel preview/production URLs
   if (isVercelClientPreview(origin)) return true;
+  
+  // Allow localhost in development
   if (process.env.NODE_ENV !== "production") {
     try {
       const { hostname } = new URL(origin);
@@ -37,5 +44,6 @@ export function isOriginAllowed(origin) {
       return false;
     }
   }
+  
   return false;
 }
