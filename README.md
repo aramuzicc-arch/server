@@ -10,22 +10,21 @@ npm run dev
 
 API: `http://localhost:5050/api` (see `PORT` in `.env`).
 
-Admin sign-in uses **MongoDB** (`AdminUser`), not Kimi OAuth. After configuring `MONGODB_URI`:
-
 ```bash
-npm run seed:admin
+npm run seed:admin   # creates AdminUser in MongoDB
 ```
 
-Then open the client at `/admin/login` (username/password from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env` at seed time).
+Admin login: client app → `/admin/login`.
 
-## Vercel
+## Vercel (`vercel.json`)
 
-1. Create a Vercel project with **Root Directory** = `server` (this folder).
-2. Add environment variables from `.env.example` in the Vercel dashboard (not from `.env` in git).
-3. Set **`CLIENT_ORIGIN`** to your frontend URL(s), comma-separated (e.g. `https://your-app.vercel.app`).
-4. Use a cloud **`MONGODB_URI`** (Atlas). Allow network access from anywhere (`0.0.0.0/0`) or Vercel IPs.
-5. Deploy. API base URL: `https://<your-project>.vercel.app/api`
+1. **Root Directory** = `server`
+2. Set env vars from `.env.example` (especially `MONGODB_URI`, `JWT_SECRET`, `CLOUDINARY_*`, `JWT_SECRET`)
+3. **`CLIENT_ORIGIN`** must include every frontend origin, e.g.  
+   `http://localhost:3000,https://aramuzicc.vercel.app`
+4. **`vercel.json` CORS headers** use `https://aramuzicc.vercel.app` for edge OPTIONS/responses. If the client URL changes, update those headers and `CLIENT_ORIGIN` together.
+5. Deploy → API base: `https://<server-project>.vercel.app/api`
 
-Point the client at that URL with `VITE_API_BASE_URL=https://<your-project>.vercel.app/api`.
+Client project: set `VITE_API_BASE_URL=https://<server-project>.vercel.app/api`
 
-Health check (no DB): `GET /api/health`
+Health (no DB): `GET /api/health`
