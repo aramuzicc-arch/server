@@ -10,7 +10,14 @@ import uploadRoutes from "./routes/upload.routes.js";
 const app = express();
 
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
+app.use((req, res, next) => {
+  // Never touch MongoDB on CORS preflight (was causing 300s timeouts on Vercel).
+  if (req.method === "OPTIONS") {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
 app.use(express.json());
 
 app.get("/", (_req, res) => {
@@ -21,9 +28,13 @@ app.get("/", (_req, res) => {
   });
 });
 
-// MongoDB only for /api/* (except health). Avoids timeouts on non-API hits (see vercel.json catch-all).
+// MongoDB only for mutating/reading API data (not health or preflight).
 app.use(async (req, _res, next) => {
-  if (!req.path.startsWith("/api") || req.path === "/api/health") {
+  if (
+    req.method === "OPTIONS" ||
+    !req.path.startsWith("/api") ||
+    req.path === "/api/health"
+  ) {
     next();
     return;
   }
