@@ -1,8 +1,5 @@
 import express from "express";
-import { isOriginAllowed } from "./config/cors.js";
-import { applyCors } from "./middleware/cors.js";
 import { normalizeVercelApiPath } from "./middleware/vercelPath.js";
-import { connectDb } from "./config/db.js";
 import authRoutes from "./routes/auth.routes.js";
 import publicRoutes from "./routes/public.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
@@ -10,59 +7,64 @@ import uploadRoutes from "./routes/upload.routes.js";
 
 const app = express();
 
-app.use(applyCors);
+// Normalize paths from Vercel serverless before CORS
 app.use(normalizeVercelApiPath);
-app.use(express.json());
 
-app.get("/", (_req, res) => {
-  res.json({
-    name: "ARA API",
-    health: "/api/health",
-    docs: "Use the client app; API routes are under /api",
-  });
-});
+// CORS: Simple, fast headers on all responses
+app.use((req, res, next) => {
+  const origin = req.headers.origin || "*";
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Requested-With",
+  );
+  res.setHeader("Access-Control-Allow-Credentials", "true");
 
-app.use(async (req, _res, next) => {
-  if (
-    req.method === "OPTIONS" ||
-    !req.path.startsWith("/api") ||
-    req.path === "/api/health"
-  ) {
-    next();
+  // Respond to OPTIONS immediately without further processing
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
     return;
   }
-  try {
-    await connectDb();
-    next();
-  } catch (err) {
-    next(err);
-  }
+
+  next();
+});
+
+app.use(express.json());
+
+// Health check - no dependencies
+app.get("/", (_req, res) => {
+  res.json({
+    status: "ok",
+    message: "ARA API",
+  });
 });
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
 
+// API routes
 app.use("/api/auth", authRoutes);
 app.use("/api", publicRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/upload", uploadRoutes);
 
+// 404 handler
 app.use((req, res) => {
-  res.status(404).json({ message: "Not found" });
+  res.status(404).json({ message: "Not found", path: req.path });
 });
 
+// Error handler
 app.use((error, req, res, _next) => {
-  const origin = req.headers.origin;
-  if (origin && !res.headersSent && isOriginAllowed(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Vary", "Origin");
-  }
   console.error(error);
-  if (!res.headersSent) {
-    res.status(500).json({ message: "Internal server error" });
-  }
+  res.status(500).json({
+    message: "Internal server error",
+    error: process.env.NODE_ENV === "production" ? undefined : error.message,
+  });
 });
 
 export default app;
