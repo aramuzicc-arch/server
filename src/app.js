@@ -46,7 +46,13 @@ app.use((_req, res) => res.status(404).json({ message: "Not found" }));
 
 app.use((err, _req, res, _next) => {
   console.error(err);
-  res.status(500).json({ message: "Internal server error" });
+  const dbError =
+    err.name === "MongoServerSelectionError" ||
+    err.name === "MongooseServerSelectionError" ||
+    err.name === "MongoNetworkError";
+  res.status(dbError ? 503 : 500).json({
+    message: dbError ? "Database unavailable" : "Internal server error",
+  });
 });
 
 export default app;
