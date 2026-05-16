@@ -7,6 +7,14 @@ import uploadRoutes from "./routes/upload.routes.js";
 
 const app = express();
 
+// Parse allowed origins from environment variable
+const allowedOrigins = new Set(
+  (process.env.CLIENT_ORIGIN || "http://localhost:3000")
+    .split(",")
+    .map((origin) => origin.trim().replace(/\/$/, ""))
+    .filter(Boolean),
+);
+
 // Initialize database connection at startup
 // Errors are logged but don't crash the server (serverless can retry)
 connectDb().catch((err) => {
@@ -23,10 +31,16 @@ app.use((req, _res, next) => {
   next();
 });
 
-// CORS: Synchronous, no dependencies
+// CORS: Only allow specified origins
 app.use((req, res, next) => {
-  const origin = req.headers.origin || "*";
-  res.setHeader("Access-Control-Allow-Origin", origin);
+  const origin = req.headers.origin;
+  const normalizedOrigin = origin?.replace(/\/$/, "");
+
+  if (origin && allowedOrigins.has(normalizedOrigin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+  }
+
   res.setHeader(
     "Access-Control-Allow-Methods",
     "GET, POST, PUT, DELETE, PATCH, OPTIONS",
@@ -35,7 +49,6 @@ app.use((req, res, next) => {
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, X-Requested-With",
   );
-  res.setHeader("Access-Control-Allow-Credentials", "true");
 
   // OPTIONS requests respond immediately
   if (req.method === "OPTIONS") {
