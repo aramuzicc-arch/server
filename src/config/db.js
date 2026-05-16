@@ -1,47 +1,56 @@
 import mongoose from "mongoose";
-import dotenv from "dotenv";
+import { env } from "./env.js";
 
-dotenv.config();
+// Cache connection for serverless environments (Vercel)
+let cached = global.mongoose;
 
-/**
- * Vercel serverless: reuse one connection across warm invocations.
- * @see https://www.mongodb.com/docs/atlas/manage-connections-serverless/
- */
-const globalCache = globalThis;
-
-if (!globalCache.__mongoose) {
-  globalCache.__mongoose = { conn: null, promise: null };
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
 }
 
-const cache = globalCache.__mongoose;
-
+/**
+ * Connect to MongoDB with serverless-optimized settings.
+ * Returns cached connection if available; queues operations until connected.
+ */
 export async function connectDb() {
-  const uri = process.env.MONGODB_URI;
-  if (!uri) {
-    throw new Error("Missing MONGODB_URI");
+  // If we already have an active connection, return it
+  if (cached.conn) {
+    return cached.conn;
   }
 
-  if (cache.conn) {
-    return cache.conn;
-  }
+  // If a connection promise is already pending, wait for it
+  if (!cached.promise) {
+    const connectOptions = {
+      // Queue operations until connected (prevents errors on cold start)
+      bufferCommands: true,
+      // Serverless-optimized pool size
+      maxPoolSize: process.env.VERCEL === "1" ? 1 : 10,
+      // Fail fast if MongoDB is unreachable
+      serverSelectionTimeoutMS: 8000,
+      // Allow operations to wait (Vercel timeout is 300s)
+      socketTimeoutMS: 45000,
+    };
 
-  if (!cache.promise) {
-    cache.promise = mongoose
-      .connect(uri, {
-        bufferCommands: false,
-        maxPoolSize: 5,
-        serverSelectionTimeoutMS: 5_000,
-        socketTimeoutMS: 45_000,
+    cached.promise = mongoose
+      .connect(env.mongodbUri, connectOptions)
+      .then((mongooseInstance) => {
+        console.log("[DB] Connected to MongoDB");
+        return mongooseInstance;
       })
-      .then((m) => m);
+      .catch((error) => {
+        console.error("[DB] Connection failed:", error.message);
+        cached.promise = null;
+        throw error;
+      });
   }
 
   try {
-    cache.conn = await cache.promise;
-  } catch (err) {
-    cache.promise = null;
-    throw err;
+    cached.conn = await cached.promise;
+    return cached.conn;
+  } catch (error) {
+    cached.promise = null;
+    throw error;
   }
-
-  return cache.conn;
 }
+
+export default connectDb;
